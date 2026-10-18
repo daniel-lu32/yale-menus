@@ -64,14 +64,10 @@ test("onlyHere compares only loaded colleges and needs at least two", () => {
   assert.equal(r1.unique.a.size, 0);
 });
 
-test("chips: 'is' tags match presence, 'No X' chips match absence, combined with AND", () => {
-  const chips = chipsFor(["Vegan"], ["Pork", "Peanuts"]);
-  assert.deepEqual(chips.map((c) => c.label), ["Vegan", "No Pork", "No Peanuts"]);
-  assert.equal(itemMatches(["Vegan", "Soy"], ["is:Vegan"]), true);
-  assert.equal(itemMatches(["Soy"], ["is:Vegan"]), false);
-  assert.equal(itemMatches(["Pork"], ["no:Pork"]), false);
-  assert.equal(itemMatches(["Vegan"], ["is:Vegan", "no:Pork"]), true);
-  assert.equal(itemMatches(["Vegan", "Pork"], ["is:Vegan", "no:Pork"]), false);
+test("chips match items that have the tag, combined with AND", () => {
+  assert.deepEqual(chipsFor(["Vegan"]), [{ id: "is:Vegan", label: "Vegan" }]);
+  assert.equal(itemMatches(["Vegan"], ["is:Vegan"]), true);
+  assert.equal(itemMatches([], ["is:Vegan"]), false);
   assert.equal(itemMatches([], []), true);
 });
 

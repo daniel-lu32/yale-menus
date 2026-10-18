@@ -4,16 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Yale Menus</title>
-  <meta name="description" content="Grace Hopper, Silliman and Branford dining hall menus side by side.">
+  <meta name="description" content="Silliman, Grace Hopper and Branford dining hall menus side by side, one from each circuit.">
   <meta name="theme-color" content="#00356b">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="top">
-    <h1>Hopper · Silliman · Branford</h1>
+    <h1>Yale Menus</h1>
     <p id="updated" class="muted"></p>
   </header>
+
+  <section class="circuits" aria-label="Dining hall circuits">
+    <p>Yale's residential dining halls are on three circuits. Colleges in a circuit serve largely the same menu, so each column below stands in for its whole circuit.</p>
+    <dl>
+      <div><dt>A</dt><dd>Silliman, Timothy Dwight, Pauli Murray, Benjamin Franklin</dd></div>
+      <div><dt>B</dt><dd>Ezra Stiles, Morse, Berkeley, Trumbull, Grace Hopper</dd></div>
+      <div><dt>C</dt><dd>Branford, Saybrook, Davenport, Pierson, Jonathan Edwards</dd></div>
+    </dl>
+  </section>
 
   <div id="banner" class="banner" role="status" hidden></div>
 
@@ -24,8 +33,7 @@
   </nav>
 
   <div class="filters">
-    <div id="chips" class="chips" aria-label="Diet filters"></div>
-    <button id="clear" type="button" class="link-button" hidden>Clear filters</button>
+    <div id="chips" class="chips" aria-label="Filters"></div>
   </div>
 
   <p id="comparing" class="muted" hidden></p>
@@ -37,7 +45,6 @@
 
   <footer class="muted">
     Data from <a href="https://yalehospitality.nutrislice.com/">Yale Hospitality on Nutrislice</a>, refreshed about four times a day.
-    Diet and allergen tags are only as accurate as Nutrislice's. Check the official menu or ask staff if you have a serious allergy.
   </footer>
 
   <script type="module" src="app.js"></script>

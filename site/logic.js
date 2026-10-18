@@ -73,19 +73,13 @@ export function onlyHere(day, meal, slugs) {
   return { compared, unique };
 }
 
-export function chipsFor(isTags, containsTags) {
-  return [
-    ...isTags.map((t) => ({ id: `is:${t}`, label: t })),
-    ...containsTags.map((t) => ({ id: `no:${t}`, label: `No ${t}` })),
-  ];
+export function chipsFor(tags) {
+  return tags.map((t) => ({ id: `is:${t}`, label: t }));
 }
 
-// Selected chips combine with AND: an item must meet every constraint.
+// Selected chips combine with AND: an item must have every selected tag.
 export function itemMatches(tags, selected) {
-  return selected.every((id) => {
-    const tag = id.slice(3);
-    return id.startsWith("is:") ? tags.includes(tag) : !tags.includes(tag);
-  });
+  return selected.every((id) => tags.includes(id.slice(3)));
 }
 
 export function isStale(generatedAt, now = new Date()) {

@@ -1,6 +1,6 @@
 # Yale Menus
 
-Grace Hopper, Silliman and Branford dining hall menus side by side, with diet filters and "Only here" badges for dishes just one college is serving.
+Silliman (circuit A), Grace Hopper (B) and Branford (C) dining hall menus side by side, with a Vegan filter and "Only here" badges for dishes just one college is serving. Each meal includes its desserts.
 
 Live: https://daniel-lu32.github.io/yale-menus/
 
@@ -29,8 +29,8 @@ npm test   # node --test + python unittest; no dependencies to install
 
 ## Changing colleges or tags
 
-- Colleges: edit `COLLEGES` at the top of `scripts/fetch_menus.py`.
-- Diet tags: `IS_TAGS` (chip matches items that have the tag) and `CONTAINS_TAGS` (a "No X" chip matches items without it). If the Actions log warns about unknown tags, add them to one of these lists.
+- Colleges: edit `COLLEGES` (slug, name, circuit) at the top of `scripts/fetch_menus.py`.
+- Tags: `FILTER_TAGS` lists the only Nutrislice tags kept (currently just Vegan); each becomes a filter chip and a label on matching dishes.
 
 ## One-time setup
 

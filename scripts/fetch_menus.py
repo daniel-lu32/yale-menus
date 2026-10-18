@@ -15,22 +15,21 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 COLLEGES = [
-    ("hopper-college", "Grace Hopper"),
-    ("silliman-college", "Silliman"),
-    ("branford-college", "Branford"),
+    ("silliman-college", "Silliman", "A"),
+    ("hopper-college", "Grace Hopper", "B"),
+    ("branford-college", "Branford", "C"),
 ]
 MEALS = ["breakfast", "lunch", "dinner"]
 ALL_DAY = ["salad-bar", "daily-offerings"]
 MENUS = MEALS + ALL_DAY
 
-IS_TAGS = ["Vegan", "Vegetarian", "Gluten Friendly", "9 In Mind"]
-CONTAINS_TAGS = [
-    "Gluten", "Milk", "Wheat", "Soy", "Sesame", "Eggs", "Coconut", "Pork",
-    "Alcohol", "Fish", "Shellfish", "Peanuts", "Tree Nuts",
-]
-KNOWN_TAGS = set(IS_TAGS + CONTAINS_TAGS)
+# Only these tags are kept; everything else (allergens etc.) is dropped.
+FILTER_TAGS = ["Vegan"]
+# Daily-offerings sections moved into the matching meal as "DESSERT".
+DESSERT_SECTIONS = {"lunch": "LUNCH: DESSERT", "dinner": "DINNER: DESSERT"}
+DROPPED_SECTIONS = {"GLUTEN FRIENDLY"}
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 TZ = ZoneInfo("America/New_York")
 API = ("https://yalehospitality.api.nutrislice.com/menu/api/weeks/school/"
        "{slug}/menu-type/{menu}/{d.year}/{d.month:02d}/{d.day:02d}/")
@@ -72,7 +71,7 @@ def parse_week(payload):
                 if not sections:
                     sections.append({"section": "", "items": []})
                 tags = [i["name"] for i in (food.get("icons") or {}).get("food_icons", [])
-                        if i.get("name")]
+                        if i.get("name") in FILTER_TAGS]
                 sections[-1]["items"].append({"name": food["name"].strip(), "tags": tags})
         sections = [s for s in sections if s["items"]]
         days[day["date"]] = {"status": "ok" if sections else "empty", "sections": sections}
@@ -102,6 +101,29 @@ def load_previous(fetch_json):
     return None
 
 
+def move_desserts(days):
+    """Move each meal's dessert section out of daily-offerings into that meal.
+
+    Runs on freshly fetched entries only, before carry-forward, so carried
+    entries (which already include their dessert) are never doubled.
+    """
+    for menus in days.values():
+        offerings = menus.get("daily-offerings", {})
+        for slug, entry in offerings.items():
+            keep = []
+            for sec in entry["sections"]:
+                meal = next((m for m, title in DESSERT_SECTIONS.items() if sec["section"] == title), None)
+                if meal:
+                    target = menus.get(meal, {}).get(slug)
+                    if target and target["status"] == "ok":
+                        target["sections"].append({"section": "DESSERT", "items": sec["items"]})
+                elif sec["section"] not in DROPPED_SECTIONS:
+                    keep.append(sec)
+            entry["sections"] = keep
+            if entry["status"] == "ok" and not keep:
+                entry["status"] = "empty"
+
+
 def build(fetch_json, now, previous):
     """Fetch every college and menu and assemble the output document.
 
@@ -114,7 +136,7 @@ def build(fetch_json, now, previous):
     attempts = 0
     failures = []
 
-    for slug, _ in COLLEGES:
+    for slug, _, _ in COLLEGES:
         for menu in MENUS:
             for start in week_starts(today):
                 attempts += 1
@@ -132,6 +154,8 @@ def build(fetch_json, now, previous):
             return None, warnings + ["every fetch failed and there is no previous menus.json"]
         return previous, warnings + ["every fetch failed; redeploying the previous menus.json unchanged"]
 
+    move_desserts(days)
+
     if previous is not None:
         for d, menus in days.items():
             for menu, by_slug in menus.items():
@@ -144,21 +168,13 @@ def build(fetch_json, now, previous):
                         carried["stale_from"] = old.get("stale_from") or previous["generated_at"]
                         by_slug[slug] = carried
 
-    unknown = sorted({tag for menus in days.values() for by_slug in menus.values()
-                      for entry in by_slug.values() for s in entry["sections"]
-                      for item in s["items"] for tag in item["tags"]} - KNOWN_TAGS)
-    if unknown:
-        warnings.append("unknown tags (add them to IS_TAGS or CONTAINS_TAGS): " + ", ".join(unknown))
-
     data = {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now.isoformat(timespec="seconds"),
-        "colleges": [{"slug": s, "name": n} for s, n in COLLEGES],
+        "colleges": [{"slug": s, "name": n, "circuit": c} for s, n, c in COLLEGES],
         "meals": MEALS,
         "all_day": ALL_DAY,
-        "is_tags": IS_TAGS,
-        "contains_tags": CONTAINS_TAGS,
-        "unknown_tags": unknown,
+        "filter_tags": FILTER_TAGS,
         "days": dict(sorted(days.items())),
     }
     return data, warnings

@@ -5,7 +5,7 @@ import {
 
 const FILTERS_KEY = "yale-menus:filters";
 const MEAL_LABELS = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" };
-const ALL_DAY_LABELS = { "salad-bar": "Soup & salad bar", "daily-offerings": "Desserts & daily offerings" };
+const ALL_DAY_LABELS = { "salad-bar": "Soup & salad bar", "daily-offerings": "Ice cream, cereal & more" };
 const $ = (id) => document.getElementById(id);
 
 let data;
@@ -64,7 +64,7 @@ function renderControls(today) {
       onclick: () => { state.meal = m; render(); },
     }, MEAL_LABELS[m] ?? m)));
 
-  $("chips").replaceChildren(...chipsFor(data.is_tags, data.contains_tags).map((c) =>
+  $("chips").replaceChildren(...chipsFor(data.filter_tags).map((c) =>
     el("button", {
       type: "button", class: "chip", "aria-pressed": String(state.filters.includes(c.id)),
       onclick: () => {
@@ -74,7 +74,6 @@ function renderControls(today) {
         render();
       },
     }, c.label)));
-  $("clear").hidden = state.filters.length === 0;
 
   $("college-tabs").replaceChildren(...data.colleges.map((c, i) =>
     el("button", {
@@ -84,14 +83,10 @@ function renderControls(today) {
 }
 
 function renderItem(item, unique) {
-  const isTags = item.tags.filter((t) => data.is_tags.includes(t));
-  const contains = item.tags.filter((t) => !data.is_tags.includes(t));
   return el("li", { class: itemMatches(item.tags, state.filters) ? "item" : "item dim" },
     el("span", { class: "name" }, item.name),
     unique?.has(normalizeName(item.name)) && el("span", { class: "only" }, "Only here"),
-    isTags.length > 0 && el("span", { class: "tags" },
-      ...isTags.map((t) => el("span", { class: "tag" }, t))),
-    contains.length > 0 && el("span", { class: "contains" }, `Contains ${contains.join(", ")}`));
+    ...item.tags.map((t) => el("span", { class: "tag" }, t)));
 }
 
 function renderEntry(entry, slug, menu, unique) {
@@ -120,10 +115,10 @@ function renderColumns() {
 
   $("columns").replaceChildren(...data.colleges.map((c, i) =>
     el("section", { class: i === state.col ? "col active" : "col" },
-      el("h2", {}, c.name),
+      el("h2", {}, c.name, el("span", { class: "circuit" }, `Circuit ${c.circuit}`)),
       ...renderEntry(day[state.meal]?.[c.slug], c.slug, state.meal, unique[c.slug]),
       el("details", { class: "all-day" },
-        el("summary", {}, "All day: soups, salad bar, desserts"),
+        el("summary", {}, "All day: soups, salad bar, ice cream"),
         ...data.all_day.map((m) => el("div", { class: "all-day-menu" },
           el("h3", { class: "menu-name" }, ALL_DAY_LABELS[m] ?? m),
           ...renderEntry(day[m]?.[c.slug], c.slug, m, null)))))));
@@ -153,7 +148,7 @@ async function init() {
     return;
   }
   state.meal = defaultMeal(data.days[state.date], minutes, data.meals, slugs());
-  const known = new Set(chipsFor(data.is_tags, data.contains_tags).map((c) => c.id));
+  const known = new Set(chipsFor(data.filter_tags).map((c) => c.id));
   state.filters = loadFilters().filter((f) => known.has(f));
 
   $("date").addEventListener("change", (e) => {
@@ -163,7 +158,6 @@ async function init() {
     }
     render();
   });
-  $("clear").addEventListener("click", () => { state.filters = []; saveFilters(); render(); });
   render();
 }
 

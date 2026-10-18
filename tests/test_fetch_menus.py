@@ -44,8 +44,8 @@ class ParseWeek(unittest.TestCase):
         wed = days["2026-10-14"]
         self.assertEqual(wed["status"], "ok")
         self.assertEqual(wed["sections"], [{"section": "DINNER", "items": [
-            {"name": "Tofu", "tags": ["Vegan", "Soy"]},
-            {"name": "Chicken", "tags": ["Gluten Friendly"]},
+            {"name": "Tofu", "tags": ["Vegan"]},
+            {"name": "Chicken", "tags": []},
         ]}])
         self.assertEqual(days["2026-10-12"], {"status": "empty", "sections": []})
 
@@ -68,7 +68,6 @@ class Build(unittest.TestCase):
         self.assertEqual(len(data["days"]), 14)
         self.assertEqual(set(data["days"]["2026-10-14"]), set(fm.MENUS))
         self.assertEqual(data["days"]["2026-10-14"]["dinner"]["hopper-college"]["status"], "ok")
-        self.assertEqual(data["unknown_tags"], [])
 
     def test_partial_failure_is_error_without_previous(self):
         data, warnings = fm.build(fake_fetch(fail=lambda u: "silliman-college/menu-type/dinner" in u), NOW, None)
@@ -109,10 +108,51 @@ class Build(unittest.TestCase):
         data, _ = fm.build(fake_fetch(fail=lambda u: True), NOW, None)
         self.assertIsNone(data)
 
-    def test_unknown_tags_reported(self):
-        data, warnings = fm.build(fake_fetch(rows=[food("Satay", "Peanuts", "Lupin")]), NOW, None)
-        self.assertEqual(data["unknown_tags"], ["Lupin"])
-        self.assertTrue(any("Lupin" in w for w in warnings))
+    def test_only_vegan_tag_is_kept(self):
+        data, _ = fm.build(fake_fetch(rows=[food("Satay", "Peanuts", "Vegan", "Gluten Friendly")]), NOW, None)
+        item = data["days"]["2026-10-14"]["dinner"]["hopper-college"]["sections"][0]["items"][0]
+        self.assertEqual(item["tags"], ["Vegan"])
+        self.assertEqual(data["filter_tags"], ["Vegan"])
+
+    def test_desserts_move_into_their_meal(self):
+        rows = [title("DINNER"), food("Tofu"), title("LUNCH: DESSERT"), food("Cookie"),
+                title("DINNER: DESSERT"), food("Pie"), title("ICE CREAM"), food("Vanilla"),
+                title("GLUTEN FRIENDLY"), food("GF Bagel")]
+        data, _ = fm.build(fake_fetch(rows=rows), NOW, None)
+        day = data["days"]["2026-10-14"]
+        dinner = day["dinner"]["hopper-college"]["sections"]
+        self.assertEqual(dinner[-1], {"section": "DESSERT", "items": [{"name": "Pie", "tags": []}]})
+        lunch = day["lunch"]["hopper-college"]["sections"]
+        self.assertEqual(lunch[-1]["items"][0]["name"], "Cookie")
+        offerings = [s["section"] for s in day["daily-offerings"]["hopper-college"]["sections"]]
+        self.assertNotIn("LUNCH: DESSERT", offerings)
+        self.assertNotIn("DINNER: DESSERT", offerings)
+        self.assertNotIn("GLUTEN FRIENDLY", offerings)
+        self.assertIn("ICE CREAM", offerings)
+
+    def test_dessert_not_added_to_unposted_meal(self):
+        days = {"2026-10-14": {
+            "dinner": {"a": {"status": "empty", "sections": []}},
+            "daily-offerings": {"a": {"status": "ok", "sections": [
+                {"section": "DINNER: DESSERT", "items": [{"name": "Pie", "tags": []}]}]}},
+        }}
+        fm.move_desserts(days)
+        self.assertEqual(days["2026-10-14"]["dinner"]["a"], {"status": "empty", "sections": []})
+        self.assertEqual(days["2026-10-14"]["daily-offerings"]["a"]["status"], "empty")
+
+    def test_carried_meal_keeps_its_dessert_once(self):
+        meal_rows = [title("DINNER"), food("Tofu")]
+        offering_rows = [title("DINNER: DESSERT"), food("Pie")]
+
+        def fetch(fail):
+            meals, offerings = fake_fetch(rows=meal_rows, fail=fail), fake_fetch(rows=offering_rows, fail=fail)
+            return lambda url: offerings(url) if "daily-offerings" in url else meals(url)
+
+        good, _ = fm.build(fetch(lambda u: False), NOW, None)
+        good["generated_at"] = "2026-10-14T06:00:00-04:00"
+        data, _ = fm.build(fetch(lambda u: "silliman-college/menu-type/dinner" in u), NOW, good)
+        sections = data["days"]["2026-10-14"]["dinner"]["silliman-college"]["sections"]
+        self.assertEqual([s["section"] for s in sections], ["DINNER", "DESSERT"])
 
 
 class LoadPrevious(unittest.TestCase):
