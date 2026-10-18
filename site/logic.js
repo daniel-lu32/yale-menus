@@ -43,36 +43,6 @@ export function defaultMeal(day, minutes, meals, slugs) {
   return meals[start];
 }
 
-// Name used only to compare dishes across colleges; never displayed.
-export function normalizeName(name) {
-  return name
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// For one date and meal: which colleges are compared, and which normalized
-// dish names are unique to each. Badges need at least two loaded colleges.
-export function onlyHere(day, meal, slugs) {
-  const compared = slugs.filter((s) => day?.[meal]?.[s]?.status === "ok");
-  const unique = Object.fromEntries(slugs.map((s) => [s, new Set()]));
-  if (compared.length < 2) return { compared, unique };
-  const namesBySlug = Object.fromEntries(compared.map((s) => [
-    s,
-    new Set(day[meal][s].sections.flatMap((sec) => sec.items.map((i) => normalizeName(i.name)))),
-  ]));
-  for (const s of compared) {
-    for (const name of namesBySlug[s]) {
-      if (compared.every((o) => o === s || !namesBySlug[o].has(name))) unique[s].add(name);
-    }
-  }
-  return { compared, unique };
-}
-
 export function chipsFor(tags) {
   return tags.map((t) => ({ id: `is:${t}`, label: t }));
 }

@@ -1,6 +1,6 @@
 # Yale Menus
 
-Silliman (circuit A), Grace Hopper (B) and Branford (C) dining hall menus side by side, with a Vegan filter and "Only here" badges for dishes just one college is serving. Each meal includes its desserts.
+Silliman (circuit A), Grace Hopper (B) and Branford (C) dining hall menus side by side, with a Vegan filter. Each meal includes its desserts.
 
 Live: https://daniel-lu32.github.io/yale-menus/
 

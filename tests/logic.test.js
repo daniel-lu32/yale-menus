@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   chipsFor, defaultDate, defaultMeal, easternNow, isStale, itemMatches,
-  normalizeName, onlyHere,
 } from "../site/logic.js";
 
 const MEALS = ["breakfast", "lunch", "dinner"];
@@ -35,33 +34,6 @@ test("defaultMeal follows the clock and skips meals nobody serves", () => {
   assert.equal(defaultMeal(weekend, 8 * 60, MEALS, SLUGS), "lunch");
   const nothing = { breakfast: { a: empty }, lunch: { a: error }, dinner: { a: empty } };
   assert.equal(defaultMeal(nothing, 12 * 60, MEALS, SLUGS), "lunch");
-});
-
-test("normalizeName ignores case, accents, punctuation and & vs and", () => {
-  assert.equal(normalizeName("  Mac & Cheese "), normalizeName("mac and cheese"));
-  assert.equal(normalizeName("Crème Brûlée"), "creme brulee");
-  assert.equal(normalizeName("General Tso's  Chicken,"), "general tso s chicken");
-  assert.notEqual(normalizeName("Chicken"), normalizeName("Chickpeas"));
-});
-
-test("onlyHere badges dishes unique to one loaded college", () => {
-  const day = { dinner: { a: ok("Tofu", "Rice"), b: ok("rice", "Soup"), c: ok("Rice", "Mac & Cheese") } };
-  const { compared, unique } = onlyHere(day, "dinner", SLUGS);
-  assert.deepEqual(compared, SLUGS);
-  assert.deepEqual([...unique.a], ["tofu"]);
-  assert.deepEqual([...unique.b], ["soup"]);
-  assert.deepEqual([...unique.c], ["mac and cheese"]);
-});
-
-test("onlyHere compares only loaded colleges and needs at least two", () => {
-  const two = { dinner: { a: ok("Tofu", "Rice"), b: ok("Rice"), c: error } };
-  const r2 = onlyHere(two, "dinner", SLUGS);
-  assert.deepEqual(r2.compared, ["a", "b"]);
-  assert.deepEqual([...r2.unique.a], ["tofu"]);
-  const one = { dinner: { a: ok("Tofu"), b: empty, c: error } };
-  const r1 = onlyHere(one, "dinner", SLUGS);
-  assert.deepEqual(r1.compared, ["a"]);
-  assert.equal(r1.unique.a.size, 0);
 });
 
 test("chips match items that have the tag, combined with AND", () => {

@@ -108,7 +108,6 @@ select {
 }
 .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
-#comparing { margin: 0 0 10px; font-size: 0.85rem; }
 
 .college-tabs { display: none; width: 100%; margin-bottom: 10px; }
 .college-tabs button { flex: 1; }
@@ -136,16 +135,6 @@ select {
 .item:first-child { border-top: 0; }
 .item.dim { opacity: 0.35; }
 .name { font-weight: 500; }
-.only {
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--only-bg);
-  color: var(--only);
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
 .tag { margin-left: 6px; padding: 0 6px; border-radius: 4px; background: var(--tag-bg); color: var(--tag); font-size: 0.7rem; }
 
 .status { color: var(--muted); font-style: italic; }

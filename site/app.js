@@ -1,6 +1,6 @@
 import {
   chipsFor, defaultDate, defaultMeal, easternNow, isStale, itemMatches,
-  mealHasData, normalizeName, onlyHere,
+  mealHasData,
 } from "./logic.js";
 
 const FILTERS_KEY = "yale-menus:filters";
@@ -82,14 +82,13 @@ function renderControls(today) {
     }, c.name)));
 }
 
-function renderItem(item, unique) {
+function renderItem(item) {
   return el("li", { class: itemMatches(item.tags, state.filters) ? "item" : "item dim" },
     el("span", { class: "name" }, item.name),
-    unique?.has(normalizeName(item.name)) && el("span", { class: "only" }, "Only here"),
     ...item.tags.map((t) => el("span", { class: "tag" }, t)));
 }
 
-function renderEntry(entry, slug, menu, unique) {
+function renderEntry(entry, slug, menu) {
   if (!entry || entry.status === "empty") return [el("p", { class: "status" }, "No menu posted")];
   if (entry.status === "error") {
     return [el("p", { class: "status error" }, "Couldn't load this menu. ",
@@ -99,29 +98,21 @@ function renderEntry(entry, slug, menu, unique) {
     entry.stale_from && el("p", { class: "status" }, `Saved copy from ${fmtTime(entry.stale_from)}`),
     ...entry.sections.map((sec) => el("div", { class: "section" },
       sec.section && el("h3", {}, sec.section),
-      el("ul", {}, ...sec.items.map((i) => renderItem(i, unique))))),
+      el("ul", {}, ...sec.items.map(renderItem)))),
   ];
 }
 
 function renderColumns() {
   const day = data.days[state.date] ?? {};
-  const { compared, unique } = onlyHere(day, state.meal, slugs());
-  const total = data.colleges.length;
-  const anyData = mealHasData(day, state.meal, slugs());
-  $("comparing").hidden = !anyData || compared.length === total;
-  $("comparing").textContent = compared.length < 2
-    ? `Comparing ${compared.length} of ${total} colleges, so no "Only here" badges.`
-    : `Comparing ${compared.length} of ${total} colleges.`;
-
   $("columns").replaceChildren(...data.colleges.map((c, i) =>
     el("section", { class: i === state.col ? "col active" : "col" },
       el("h2", {}, c.name, el("span", { class: "circuit" }, `Circuit ${c.circuit}`)),
-      ...renderEntry(day[state.meal]?.[c.slug], c.slug, state.meal, unique[c.slug]),
+      ...renderEntry(day[state.meal]?.[c.slug], c.slug, state.meal),
       el("details", { class: "all-day" },
         el("summary", {}, "All day: soups, salad bar, ice cream"),
         ...data.all_day.map((m) => el("div", { class: "all-day-menu" },
           el("h3", { class: "menu-name" }, ALL_DAY_LABELS[m] ?? m),
-          ...renderEntry(day[m]?.[c.slug], c.slug, m, null)))))));
+          ...renderEntry(day[m]?.[c.slug], c.slug, m)))))));
 }
 
 function render() {
