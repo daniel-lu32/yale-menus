@@ -96,9 +96,31 @@ function renderEntry(entry, slug, menu) {
   }
   return [
     entry.stale_from && el("p", { class: "status" }, `Saved copy from ${fmtTime(entry.stale_from)}`),
-    ...entry.sections.map((sec) => el("div", { class: "section" },
-      sec.section && el("h3", {}, sec.section),
-      el("ul", {}, ...sec.items.map(renderItem)))),
+    ...renderSections(entry.sections),
+  ];
+}
+
+function renderSections(sections) {
+  return sections.map((sec) => el("div", { class: "section" },
+    sec.section && el("h3", {}, sec.section),
+    el("ul", {}, ...sec.items.map(renderItem))));
+}
+
+// A meal splits into three bands (main, extras, dessert) that line up across
+// columns via CSS subgrid, so accompaniments and desserts start at one height.
+function renderMealBands(entry, slug) {
+  if (entry?.status !== "ok") {
+    return [el("div", { class: "band main" }, ...renderEntry(entry, slug, state.meal)),
+      el("div", { class: "band extras" }), el("div", { class: "band dessert" })];
+  }
+  const [main, ...rest] = entry.sections.filter((s) => s.section !== "DESSERT");
+  const dessert = entry.sections.filter((s) => s.section === "DESSERT");
+  return [
+    el("div", { class: "band main" },
+      entry.stale_from && el("p", { class: "status" }, `Saved copy from ${fmtTime(entry.stale_from)}`),
+      ...renderSections(main ? [main] : [])),
+    el("div", { class: rest.length ? "band extras" : "band extras empty" }, ...renderSections(rest)),
+    el("div", { class: dessert.length ? "band dessert" : "band dessert empty" }, ...renderSections(dessert)),
   ];
 }
 
@@ -107,7 +129,7 @@ function renderColumns() {
   $("columns").replaceChildren(...data.colleges.map((c, i) =>
     el("section", { class: i === state.col ? "col active" : "col" },
       el("h2", {}, c.name, el("span", { class: "circuit" }, `Circuit ${c.circuit}`)),
-      ...renderEntry(day[state.meal]?.[c.slug], c.slug, state.meal),
+      ...renderMealBands(day[state.meal]?.[c.slug], c.slug),
       el("details", { class: "all-day" },
         el("summary", {}, "All day: soups, salad bar, ice cream"),
         ...data.all_day.map((m) => el("div", { class: "all-day-menu" },

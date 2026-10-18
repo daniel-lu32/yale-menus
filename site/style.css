@@ -112,9 +112,14 @@ select {
 .college-tabs { display: none; width: 100%; margin-bottom: 10px; }
 .college-tabs button { flex: 1; }
 
-.columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; row-gap: 0; }
 
 .col {
+  /* header, main, extras, dessert, all-day: rows shared across columns */
+  display: grid;
+  grid-row: span 5;
+  grid-template-rows: subgrid;
+  align-content: start;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -140,7 +145,10 @@ select {
 .status { color: var(--muted); font-style: italic; }
 .status.error { color: var(--error); font-style: normal; }
 
-.all-day { margin-top: 14px; padding-top: 8px; border-top: 2px solid var(--border); }
+.band.extras, .band.dessert { margin-top: 36px; padding-top: 4px; border-top: 2px solid var(--border); }
+.band.empty { border-top-color: transparent; }
+.band > .section:first-child h3 { margin-top: 8px; }
+.all-day { margin-top: 36px; padding-top: 8px; border-top: 2px solid var(--border); }
 .all-day summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.9rem; }
 
 footer { margin: 24px 0 8px; font-size: 0.8rem; }
@@ -152,5 +160,5 @@ footer { margin: 24px 0 8px; font-size: 0.8rem; }
   .college-tabs { display: flex; }
   .columns { grid-template-columns: 1fr; }
   .col { display: none; }
-  .col.active { display: block; }
+  .col.active { display: grid; }
 }
